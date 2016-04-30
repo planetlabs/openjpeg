@@ -1,67 +1,21 @@
 language: c
+  
+env:
+  global:
+    - secure: "Tx8C7AkTwGDiPEzEaS6t3emevQMYzlcDGilbGWXT7vnSKbftH6lr/9djoKhD2Y2xA62XEfHr9fho9FzUGYuuTADz05qYIdc5m1lILRWok8SFwDt27DS0CpaSpvDYzzCPe70zBdEq1VZ05U+kXA2a4bS+R0xDA8q8vRx4jOl9LjpHvt8R2K7qHkx9LH5YmBz42PjbXdmxJPdFTY8SgWUy7dOMsnPMq0UzTLS54DMlOxSRaCrVw6qv15uIBrgTQiy+XtNft2qe5J+61w6WEhaWhbofuaxuc86jiryA8XUv04WuafoYxaErgf5+nw2/CfMAP2k5TFsNDN/F07xlCj/0aL/kVJGmVsKHUlDBbzEDhkQjw8C6hANOfagBSfRgWvko0E5o0bo0sRrIsbg1feVby7zkfX2a73fTDNC30Z3SSkzTWz37VNJLUMF14LmRDaq4/0DtIAjJDy4qaUwh4RCLcCPlbAf9nmBZn8asIFswPLd4gnktk9n42AyPHNDLExKCwe3+LsVO8ruAlejlnZyEU91vpVMF14j6WeQm2mnYb9CBdOVsBmrskyuTZ4oENDAx14CoxgL6lvxhf+gnZMhvIft1ybM+wQTdfBIl6cqlOMmU9uC8IecQx1Rz/ek17cR3PQXOWQu/jNiU2nJt1WGpBfzYSBjg/e1cVzRvIi+eI5k="
 
-matrix:
-  include:
-    - os: osx
-      compiler: clang
-      env: OPJ_CI_ARCH=x86_64 OPJ_CI_BUILD_CONFIGURATION=Release
-    - os: linux
-      compiler: gcc
-      env: OPJ_CI_ARCH=x86_64 OPJ_CI_BUILD_CONFIGURATION=Release
-    - os: linux
-      compiler: gcc
-      env: OPJ_CI_ARCH=i386 OPJ_CI_BUILD_CONFIGURATION=Release
-      addons:
-        apt:
-          packages:
-            - gcc-multilib
-    - os: linux
-      compiler: gcc
-      env: OPJ_CI_ARCH=x86_64 OPJ_CI_BUILD_CONFIGURATION=Debug
-    - os: linux
-      compiler: clang
-      env: OPJ_CI_ARCH=x86_64 OPJ_CI_BUILD_CONFIGURATION=Debug OPJ_CI_ASAN=1
-    - os: linux
-      compiler: clang-3.9
-      env: OPJ_CI_ARCH=x86_64 OPJ_CI_BUILD_CONFIGURATION=Release
-      sudo: true
-    - os: linux
-      compiler: x86_64-w64-mingw32-gcc
-      env: OPJ_CI_ARCH=x86_64 OPJ_CI_BUILD_CONFIGURATION=Release
-      addons:
-        apt:
-          packages:
-            - gcc-mingw-w64-base
-            - binutils-mingw-w64-x86-64
-            - gcc-mingw-w64-x86-64
-            - gcc-mingw-w64
-    - os: linux
-      compiler: x86_64-w64-mingw32-gcc
-      env: OPJ_CI_ARCH=i386 OPJ_CI_BUILD_CONFIGURATION=Release
-      addons:
-        apt:
-          packages:
-            - gcc-mingw-w64-base
-            - binutils-mingw-w64-i686
-            - gcc-mingw-w64-i686
-            - gcc-mingw-w64      
-    - os: linux
-      compiler: gcc-4.8
-      env: OPJ_CI_ABI_CHECK=1
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - gcc-4.8
-            - libelf-dev
-            - elfutils
-            - texinfo
-            - exuberant-ctags
+addons:
+  coverity_scan:
+    project:
+      name: "uclouvain/openjpeg"
+      description: "Build submitted via Travis CI"
+    notification_email: info@openjpeg.org
+    build_command_prepend: "mkdir build &&  cd build && cmake -G 'Unix Makefiles' -DBUILD_CODEC=ON -DBUILD_THIRDPARTY=ON .."
+    build_command:   "make -j 4"
+    branch_pattern: coverity_scan
 
 install:
-  - ./tools/travis-ci/install.sh
+  - echo "Coverity scan build"
 
 script:
-  - ./tools/travis-ci/run.sh
-  - ./tools/travis-ci/abi-check.sh
+  - echo "Coverity scan build"
