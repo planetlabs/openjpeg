@@ -100,6 +100,7 @@ static INLINE void opj_mqc_bytein(opj_mqc_t *const mqc) {
 			if (c > 0x8f) {
 				mqc->c += 0xff00;
 				mqc->ct = 8;
+                mqc->end_of_byte_stream_counter ++;
 			} else {
 				mqc->bp++;
 				mqc->c += c << 9;
@@ -111,6 +112,7 @@ static INLINE void opj_mqc_bytein(opj_mqc_t *const mqc) {
 			mqc->ct = 8;
 		}
 	} else {
+        mqc->end_of_byte_stream_counter ++;
 		mqc->c += 0xff00;
 		mqc->ct = 8;
 	}

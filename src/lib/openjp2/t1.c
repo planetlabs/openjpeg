@@ -293,7 +293,10 @@ static OPJ_BOOL opj_t1_decode_cblk( opj_t1_t *t1,
                                     opj_tcd_cblk_dec_t* cblk,
                                     OPJ_UINT32 orient,
                                     OPJ_UINT32 roishift,
-                                    OPJ_UINT32 cblksty);
+                                    OPJ_UINT32 cblksty,
+                                    opj_event_mgr_t *p_manager,
+                                    opj_mutex_t* p_manager_mutex,
+                                    OPJ_BOOL check_pterm );
 
 static OPJ_BOOL opj_t1_allocate_buffers(   opj_t1_t *t1,
                                     OPJ_UINT32 w,
@@ -1548,6 +1551,9 @@ typedef struct
     opj_tcd_tilecomp_t* tilec;
     opj_tccp_t* tccp;
     volatile OPJ_BOOL* pret;
+    opj_event_mgr_t *p_manager;
+    opj_mutex_t* p_manager_mutex;
+    OPJ_BOOL check_pterm;
 } opj_t1_cblk_decode_processing_job_t;
 
 static void opj_t1_destroy_wrapper(void* t1)
@@ -1596,7 +1602,10 @@ static void opj_t1_clbl_decode_processor(void* user_data, opj_tls_t* tls)
                             cblk,
                             band->bandno,
                             (OPJ_UINT32)tccp->roishift,
-                            tccp->cblksty)) {
+                            tccp->cblksty,
+                            job->p_manager,
+                            job->p_manager_mutex,
+                            job->check_pterm )) {
             *(job->pret) = OPJ_FALSE;
             opj_free(job);
             return;
@@ -1670,7 +1679,10 @@ static void opj_t1_clbl_decode_processor(void* user_data, opj_tls_t* tls)
 void opj_t1_decode_cblks( opj_thread_pool_t* tp,
                           volatile OPJ_BOOL* pret,
                           opj_tcd_tilecomp_t* tilec,
-                          opj_tccp_t* tccp
+                          opj_tccp_t* tccp,
+                          opj_event_mgr_t *p_manager,
+                          opj_mutex_t* p_manager_mutex,
+                          OPJ_BOOL check_pterm
                          )
 {
 	OPJ_UINT32 resno, bandno, precno, cblkno;
@@ -1695,6 +1707,9 @@ void opj_t1_decode_cblks( opj_thread_pool_t* tp,
                     job->tilec = tilec;
                     job->tccp = tccp;
                     job->pret = pret;
+                    job->p_manager_mutex = p_manager_mutex;
+                    job->p_manager = p_manager;
+                    job->check_pterm = check_pterm;
                     opj_thread_pool_submit_job( tp, opj_t1_clbl_decode_processor, job );
                     if( !(*pret) )
                         return;
@@ -1711,7 +1726,10 @@ static OPJ_BOOL opj_t1_decode_cblk(opj_t1_t *t1,
                             opj_tcd_cblk_dec_t* cblk,
                             OPJ_UINT32 orient,
                             OPJ_UINT32 roishift,
-                            OPJ_UINT32 cblksty)
+                            OPJ_UINT32 cblksty,
+                            opj_event_mgr_t *p_manager,
+                            opj_mutex_t* p_manager_mutex,
+                            OPJ_BOOL check_pterm )
 {
 	opj_raw_t *raw = t1->raw;	/* RAW component */
 	opj_mqc_t *mqc = t1->mqc;	/* MQC component */
@@ -1843,6 +1861,33 @@ static OPJ_BOOL opj_t1_decode_cblk(opj_t1_t *t1,
 		  }
 		}
 	}
+	
+    if (check_pterm)
+    {
+        if( mqc->bp+2 < mqc->end )
+        {
+            if( p_manager_mutex )
+                opj_mutex_lock( p_manager_mutex );
+            opj_event_msg(p_manager, EVT_WARNING,
+                          "PTERM check failure: %d remaining bytes in code block (%d used / %d)\n",
+                          (int)(mqc->end - mqc->bp) - 2,
+                          (int)(mqc->bp - mqc->start),
+                          (int)(mqc->end - mqc->start));
+            if( p_manager_mutex )
+                opj_mutex_unlock( p_manager_mutex );
+        }
+        else if( mqc->end_of_byte_stream_counter > 2)
+        {
+            if( p_manager_mutex )
+                opj_mutex_lock( p_manager_mutex );
+            opj_event_msg(p_manager, EVT_WARNING,
+                          "PTERM check failure: %d synthetized 0xFF markers read\n",
+                          mqc->end_of_byte_stream_counter);
+            if( p_manager_mutex )
+                opj_mutex_unlock( p_manager_mutex );
+        }
+    }
+	
     return OPJ_TRUE;
 }
 

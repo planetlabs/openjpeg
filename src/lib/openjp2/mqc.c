@@ -305,6 +305,7 @@ void opj_mqc_init_enc(opj_mqc_t *mqc, OPJ_BYTE *bp) {
 	mqc->bp = bp - 1;
 	mqc->ct = 12;
 	mqc->start = bp;
+    mqc->end_of_byte_stream_counter = 0;
 }
 
 void opj_mqc_encode(opj_mqc_t *mqc, OPJ_UINT32 d) {
@@ -430,6 +431,7 @@ void opj_mqc_segmark_enc(opj_mqc_t *mqc) {
 
 OPJ_BOOL opj_mqc_init_dec(opj_mqc_t *mqc, OPJ_BYTE *bp, OPJ_UINT32 len) {
 	opj_mqc_setcurctx(mqc, 0);
+    mqc->end_of_byte_stream_counter = 0;
 	mqc->start = bp;
 	mqc->end = bp + len;
 	mqc->bp = bp;

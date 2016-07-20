@@ -149,7 +149,8 @@ static OPJ_BOOL opj_tcd_t2_decode ( opj_tcd_t *p_tcd,
                                     opj_codestream_index_t *p_cstr_index,
                                     opj_event_mgr_t *p_manager);
 
-static OPJ_BOOL opj_tcd_t1_decode (opj_tcd_t *p_tcd);
+static OPJ_BOOL opj_tcd_t1_decode (opj_tcd_t *p_tcd,
+                                   opj_event_mgr_t *p_manager);
 
 static OPJ_BOOL opj_tcd_dwt_decode (opj_tcd_t *p_tcd);
 
@@ -1295,7 +1296,7 @@ OPJ_BOOL opj_tcd_decode_tile(   opj_tcd_t *p_tcd,
 
         /* FIXME _ProfStart(PGROUP_T1); */
         if
-                (! opj_tcd_t1_decode(p_tcd))
+                (! opj_tcd_t1_decode(p_tcd, p_manager))
         {
                 return OPJ_FALSE;
         }
@@ -1565,16 +1566,29 @@ static OPJ_BOOL opj_tcd_t2_decode (opj_tcd_t *p_tcd,
         return OPJ_TRUE;
 }
 
-static OPJ_BOOL opj_tcd_t1_decode ( opj_tcd_t *p_tcd )
+static OPJ_BOOL opj_tcd_t1_decode ( opj_tcd_t *p_tcd, opj_event_mgr_t *p_manager )
 {
         OPJ_UINT32 compno;
         opj_tcd_tile_t * l_tile = p_tcd->tcd_image->tiles;
         opj_tcd_tilecomp_t* l_tile_comp = l_tile->comps;
         opj_tccp_t * l_tccp = p_tcd->tcp->tccps;
         volatile OPJ_BOOL ret = OPJ_TRUE;
+        OPJ_BOOL check_pterm = OPJ_FALSE;
+        opj_mutex_t* p_manager_mutex = NULL;
+
+        p_manager_mutex = opj_mutex_create();
+
+        /* Only enable PTERM check if we decode all layers */
+        if( p_tcd->tcp->num_layers_to_decode == p_tcd->tcp->numlayers &&
+            (l_tccp->cblksty & J2K_CCP_CBLKSTY_PTERM) != 0 )
+        {
+            check_pterm = OPJ_TRUE;
+        }
 
         for (compno = 0; compno < l_tile->numcomps; ++compno) {
-                opj_t1_decode_cblks(p_tcd->thread_pool, &ret, l_tile_comp, l_tccp);
+
+                opj_t1_decode_cblks(p_tcd->thread_pool, &ret, l_tile_comp, l_tccp,
+                                    p_manager, p_manager_mutex, check_pterm);
                 if( !ret )
                     break;
                 ++l_tile_comp;
@@ -1582,6 +1596,8 @@ static OPJ_BOOL opj_tcd_t1_decode ( opj_tcd_t *p_tcd )
         }
 
         opj_thread_pool_wait_completion(p_tcd->thread_pool, 0);
+        if( p_manager_mutex )
+            opj_mutex_destroy( p_manager_mutex );
 
         return ret;
 }

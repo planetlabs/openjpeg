@@ -72,6 +72,7 @@ typedef struct opj_mqc {
 	OPJ_UINT32 c;
 	OPJ_UINT32 a;
 	OPJ_UINT32 ct;
+    OPJ_UINT32 end_of_byte_stream_counter; /* only used by decoder */
 	OPJ_BYTE *bp;
 	OPJ_BYTE *start;
 	OPJ_BYTE *end;
